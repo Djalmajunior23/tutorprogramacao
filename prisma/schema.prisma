@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("STUDENT") // "ADMIN", "TEACHER", "STUDENT"
+  createdAt DateTime @default(now())
+
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+}
+
+model StudentProfile {
+  id        String @id @default(uuid())
+  userId    String @unique
+  classId   String?
+  avatar    String?
+  xp        Int    @default(0)
+  level     Int    @default(1)
+
+  user      User   @relation(fields: [userId], references: [id])
+  class     Class? @relation(fields: [classId], references: [id])
+  progress  Progress[]
+  attempts  ChallengeAttempt[]
+  quizRuns  QuizRun[]
+  achievements StudentAchievement[]
+}
+
+model TeacherProfile {
+  id        String @id @default(uuid())
+  userId    String @unique
+  bio       String?
+
+  user      User   @relation(fields: [userId], references: [id])
+  classes   Class[]
+}
+
+model Class {
+  id          String   @id @default(uuid())
+  name        String
+  course      String?
+  teacherId   String
+  createdAt   DateTime @default(now())
+
+  teacher     TeacherProfile @relation(fields: [teacherId], references: [id])
+  students    StudentProfile[]
+}
+
+model Achievement {
+  id          String @id @default(uuid())
+  title       String
+  description String
+  icon        String
+  xpReward    Int
+
+  students    StudentAchievement[]
+}
+
+model StudentAchievement {
+  id            String @id @default(uuid())
+  studentId     String
+  achievementId String
+  earnedAt      DateTime @default(now())
+
+  student       StudentProfile @relation(fields: [studentId], references: [id])
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([studentId, achievementId])
+}
+
+model LearningPath {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  difficulty  String
+  xpReward    Int      @default(100)
+
+  modules     Module[]
+}
+
+model Module {
+  id             String @id @default(uuid())
+  learningPathId String
+  title          String
+  description    String
+  order          Int
+  content        String
+  xpReward       Int    @default(50)
+
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id])
+  challenges     Challenge[]
+  progress       Progress[]
+}
+
+model Challenge {
+  id          String @id @default(uuid())
+  moduleId    String?
+  title       String
+  context     String
+  command     String
+  starterCode String
+  expected    String?
+  difficulty  String
+  xpReward    Int    @default(50)
+  type        String // "PSEUDOCODE", "MULTIPLE_CHOICE", "SAEP"
+
+  module      Module? @relation(fields: [moduleId], references: [id])
+  attempts    ChallengeAttempt[]
+}
+
+model Progress {
+  id          String   @id @default(uuid())
+  studentId   String
+  moduleId    String
+  status      String   @default("IN_PROGRESS") // "NOT_STARTED", "IN_PROGRESS", "COMPLETED"
+  completedAt DateTime?
+
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  module      Module @relation(fields: [moduleId], references: [id])
+
+  @@unique([studentId, moduleId])
+}
+
+model ChallengeAttempt {
+  id          String   @id @default(uuid())
+  studentId   String
+  challengeId String
+  code        String?
+  answer      String?
+  isCorrect   Boolean
+  feedback    String
+  score       Int
+  createdAt   DateTime @default(now())
+
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+}
+
+model QuizRun {
+  id         String   @id @default(uuid())
+  studentId  String
+  title      String
+  total      Int
+  correct    Int
+  score      Float
+  createdAt  DateTime @default(now())
+
+  student    StudentProfile @relation(fields: [studentId], references: [id])
+  answers    QuizAnswer[]
+}
+
+model QuizAnswer {
+  id         String @id @default(uuid())
+  quizRunId  String
+  question   String
+  selected   String
+  correct    String
+  isCorrect  Boolean
+  competency String?
+  feedback   String?
+
+  quizRun    QuizRun @relation(fields: [quizRunId], references: [id])
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String   @default("NORMAL") // "NORMAL", "URGENTE"
+  createdAt DateTime @default(now())
+}
