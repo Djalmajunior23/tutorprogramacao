@@ -2,18 +2,54 @@ import React from 'react';
 import { UserProfile } from '../types';
 import { TRAILS, MODULES } from '../data/content';
 import { CheckCircle2, ChevronRight, Lock, BookOpen } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export default function ModuleList({ user, onSelectModule }: { user: UserProfile, onSelectModule: (id: string) => void }) {
   return (
     <div className="space-y-16 pb-10">
-      {TRAILS.map((trail) => (
-        <section key={trail.id}>
-          <div className="mb-10 text-center md:text-left">
-            <h2 className="text-4xl font-black tracking-tight">{trail.title}</h2>
-            <p className="text-text-dim mt-2 text-lg max-w-2xl">{trail.description}</p>
-          </div>
+      {TRAILS.map((trail) => {
+        const completedCount = trail.modules.filter(modId => user.completedModules.includes(modId)).length;
+        const progress = Math.round((completedCount / trail.modules.length) * 100);
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        return (
+          <section key={trail.id} className="relative">
+            <div className="mb-12 flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-card/30 p-8 rounded-[2.5rem] border border-border backdrop-blur-sm">
+              <div className="text-center lg:text-left">
+                <div className="flex items-center justify-center lg:justify-start gap-3 mb-3">
+                  <div className="w-2 h-2 bg-accent-blue rounded-full animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent-blue">Sua Jornada Atual</span>
+                </div>
+                <h2 className="text-5xl font-black tracking-tighter text-text-main">{trail.title}</h2>
+                <p className="text-text-dim mt-3 text-lg max-w-xl leading-relaxed">{trail.description}</p>
+              </div>
+              
+              <div className="w-full lg:w-96 bg-bg p-8 rounded-3xl border border-border mt-4 lg:mt-0 shadow-soft">
+                <div className="flex justify-between items-end mb-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-dim">Módulos Concluídos</p>
+                    <p className="text-3xl font-black text-text-main mt-1">
+                      {completedCount} <span className="text-text-dim text-xl">/ {trail.modules.length}</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-dim">Completude</p>
+                    <p className="text-2xl font-black text-accent-blue mt-1">{progress}%</p>
+                  </div>
+                </div>
+                <div className="h-4 bg-card border border-border rounded-full p-1 overflow-hidden shadow-inner group">
+                  <motion.div 
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    className="h-full bg-gradient-to-r from-accent-blue to-accent-purple rounded-full shadow-[0_0_15px_rgba(59,130,246,0.4)] relative"
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-[shimmer_2s_infinite]" />
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {trail.modules.map((modId) => {
               const mod = MODULES.find(m => m.id === modId);
               if (!mod) return null;
@@ -69,7 +105,8 @@ export default function ModuleList({ user, onSelectModule }: { user: UserProfile
             })}
           </div>
         </section>
-      ))}
-    </div>
-  );
+      );
+    })}
+  </div>
+);
 }

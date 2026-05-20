@@ -10,6 +10,14 @@ export interface UserProfile {
   lastAccess: string;
   role: string;
   isGuest?: boolean;
+  skills: {
+    logic: number;
+    variables: number;
+    conditionals: number;
+    loops: number;
+    arrays: number;
+    functions: number;
+  };
 }
 
 export interface Module {

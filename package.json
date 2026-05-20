@@ -9,10 +9,12 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "postinstall": "prisma generate"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.js"
+    "postinstall": "prisma generate",
+    "seed": "tsx prisma/seed.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "prisma db seed",
+    "db:push": "prisma db push"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -28,6 +30,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^4.22.2",
+    "express-rate-limit": "^8.5.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.546.0",

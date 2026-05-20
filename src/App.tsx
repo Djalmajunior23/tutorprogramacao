@@ -15,7 +15,8 @@ import {
   Code2,
   Trash2,
   Download,
-  Settings
+  Settings,
+  Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useUser } from './hooks/useUser';
@@ -32,8 +33,11 @@ import Challenges from './components/Challenges';
 import Ranking from './components/Ranking';
 import TeacherArea from './components/TeacherArea';
 import ProfileSetup from './components/ProfileSetup';
+import AdminArea from './components/AdminArea';
+import StudentManager from './components/StudentManager';
+import TutorIA from './components/TutorIA';
 
-type View = 'dashboard' | 'trails' | 'laboratory' | 'challenges' | 'ranking' | 'teacher';
+type View = 'dashboard' | 'trails' | 'laboratory' | 'challenges' | 'ranking' | 'teacher' | 'admin';
 
 export default function App() {
   const { 
@@ -81,13 +85,22 @@ export default function App() {
 
   const teacherNav = [
     { id: 'dashboard', label: 'Painel Gestor', icon: LayoutDashboard },
+    { id: 'students', label: 'Gestão de Alunos', icon: Users },
     { id: 'teacher', label: 'Gestão de Turmas', icon: ScrollText },
-    { id: 'ranking', label: 'Ranking Alunos', icon: Users },
+    { id: 'ranking', label: 'Ranking Alunos', icon: Trophy },
     { id: 'laboratory', label: 'Laboratório', icon: Terminal },
   ];
 
-  const navItems = user.role === 'TEACHER' ? teacherNav : studentNav;
-  const userAvatar = user.role === 'TEACHER' ? '👨‍🏫' : user.avatar;
+  const adminNav = [
+    { id: 'dashboard', label: 'Dashboard Admin', icon: LayoutDashboard },
+    { id: 'admin', label: 'Infraestrutura', icon: Shield },
+    { id: 'students', label: 'Gestão de Alunos', icon: Users },
+    { id: 'ranking', label: 'Global Ranking', icon: Trophy },
+    { id: 'laboratory', label: 'Laboratório', icon: Terminal },
+  ];
+
+  const navItems = user.role === 'ADMIN' ? adminNav : (user.role === 'TEACHER' ? teacherNav : studentNav);
+  const userAvatar = user.role === 'TEACHER' ? '👨‍🏫' : (user.role === 'ADMIN' ? '🛡️' : user.avatar);
 
   const renderView = () => {
     switch (currentView) {
@@ -101,7 +114,9 @@ export default function App() {
       case 'laboratory': return <Laboratory />;
       case 'challenges': return <Challenges user={user} onComplete={completeChallenge} />;
       case 'ranking': return <Ranking user={user} />;
-      case 'teacher': return <TeacherArea resetData={resetData} />;
+      case 'students': return <StudentManager />;
+      case 'teacher': return <TeacherArea user={user} resetData={resetData} />;
+      case 'admin': return <AdminArea />;
       default: return <Dashboard user={user} onStartTrilha={() => setCurrentView('trails')} />;
     }
   };
@@ -112,9 +127,9 @@ export default function App() {
       <aside className="w-64 bg-card border-r border-border hidden md:flex flex-col">
         <div className="p-6">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="logo-gradient font-black text-xl leading-tight tracking-tighter uppercase">Portal<br/>Interativo</h1>
+            <h1 className="logo-gradient font-black text-xl leading-tight tracking-tighter uppercase">Tutor<br/>Prof. Djalma</h1>
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-text-dim opacity-50">Lógica & Algoritmos</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-text-dim opacity-50">Lógica & Algoritmos (IDEA)</p>
         </div>
 
         <nav className="flex-1 px-4 mt-4 space-y-1">
@@ -243,6 +258,7 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+      <TutorIA />
     </div>
   );
 }

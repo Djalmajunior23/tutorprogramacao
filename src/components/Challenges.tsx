@@ -1,15 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, Challenge } from '../types';
-import { CHALLENGES } from '../data/challenges';
-import { Trophy, CheckCircle2, Play, Lightbulb, RotateCcw, AlertTriangle, ArrowRight, ChevronRight } from 'lucide-react';
+import { CHALLENGES as LOCAL_CHALLENGES } from '../data/challenges';
+import { Trophy, CheckCircle2, Play, Lightbulb, RotateCcw, AlertTriangle, ArrowRight, ChevronRight, RefreshCw } from 'lucide-react';
 import { interpret } from '../lib/interpreter';
 import { motion, AnimatePresence } from 'motion/react';
+import { educationService } from '../services/api';
 
 export default function Challenges({ user, onComplete }: { user: UserProfile, onComplete: (id: string, xp: number) => void }) {
   const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null);
+  const [challenges, setChallenges] = useState<Challenge[]>(LOCAL_CHALLENGES);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchChallenges = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await educationService.getChallenges();
+      if (data && data.length > 0) {
+        // Map backend model to frontend expected format
+        const mappedData: Challenge[] = data.map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          context: c.context,
+          instruction: c.command || c.instruction, // command in backend, instruction in frontend
+          initialCode: c.starterCode || c.initialCode, // starterCode in backend, initialCode in frontend
+          difficulty: c.difficulty === 'EASY' ? 'Fácil' : (c.difficulty === 'MEDIUM' ? 'Médio' : 'Difícil'),
+          xpReward: c.xpReward,
+          testCases: c.expected ? [{ input: [], expectedOutput: c.expected }] : [],
+          hint: c.hint || "Foque na lógica proposta."
+        }));
+        setChallenges(mappedData);
+      } else {
+        setChallenges(LOCAL_CHALLENGES);
+      }
+    } catch (err: any) {
+      setError('Não foi possível carregar os desafios. Tente novamente ou avise o professor.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchChallenges();
+  }, []);
   
   if (activeChallengeId) {
-    const chall = CHALLENGES.find(c => c.id === activeChallengeId)!;
+    const chall = challenges.find(c => c.id === activeChallengeId)!;
     return <ChallengeSolver challenge={chall} onBack={() => setActiveChallengeId(null)} onComplete={onComplete} isCompleted={user.completedChallenges.includes(chall.id)} />;
   }
 
@@ -26,8 +63,40 @@ export default function Challenges({ user, onComplete }: { user: UserProfile, on
         <p className="text-text-dim mt-4 text-lg max-w-2xl relative z-1 leading-relaxed">Desenvolva algoritmos para cenários do cotidiano e conquiste prestígio no ranking da turma.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {CHALLENGES.map((chall) => {
+      {error ? (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-[2rem] flex flex-col items-center justify-center text-center space-y-4"
+        >
+          <div className="w-16 h-16 bg-rose-500/20 rounded-full flex items-center justify-center text-rose-500 mb-2">
+            <AlertTriangle size={32} />
+          </div>
+          <h3 className="text-xl font-bold text-rose-400">Ops, ocorreu um problema!</h3>
+          <p className="text-rose-300 max-w-md">{error}</p>
+          <button 
+            onClick={fetchChallenges}
+            className="mt-4 px-6 py-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 font-bold rounded-xl flex items-center gap-2 transition-colors focus:ring-4 focus:ring-rose-500/20 outline-none"
+          >
+            <RefreshCw size={18} /> Tentar Novamente
+          </button>
+        </motion.div>
+      ) : loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-64 bg-card p-10 rounded-[2rem] border border-border animate-pulse flex flex-col justify-between">
+               <div className="bg-slate-700 w-24 h-6 rounded-full mb-8"></div>
+               <div className="space-y-4">
+                 <div className="bg-slate-700 w-3/4 h-6 rounded"></div>
+                 <div className="bg-slate-800 w-full h-16 rounded"></div>
+               </div>
+               <div className="bg-slate-700 w-1/3 h-8 rounded mt-10"></div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {challenges.map((chall) => {
           const isCompleted = user.completedChallenges.includes(chall.id);
           return (
             <button
@@ -71,6 +140,7 @@ export default function Challenges({ user, onComplete }: { user: UserProfile, on
           );
         })}
       </div>
+      )}
     </div>
   );
 }
@@ -95,6 +165,13 @@ function ChallengeSolver({
     const result = interpret(code);
     setOutput(result.output);
     
+    // Check if interpretation itself had errors
+    if (result.errors && result.errors.length > 0) {
+      setFeedback({ type: 'error', message: `Erro de execução: ${result.errors[0]}` });
+      return;
+    }
+    
+    // Check if student output matches the expected output
     const lastOutput = result.output[result.output.length - 1];
     const success = challenge.testCases.some(tc => lastOutput === tc.expectedOutput);
     
@@ -102,7 +179,7 @@ function ChallengeSolver({
       setFeedback({ type: 'success', message: 'Incrível! Seu algoritmo funcionou perfeitamente.' });
       onComplete(challenge.id, challenge.xpReward);
     } else {
-      setFeedback({ type: 'error', message: 'Ops! O resultado não foi o esperado. Verifique o enunciado.' });
+      setFeedback({ type: 'error', message: 'Ops! O resultado não foi o esperado. Verifique o enunciado, erros de sintaxe ou a lógica.' });
     }
   };
 

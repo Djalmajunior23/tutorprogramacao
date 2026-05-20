@@ -1,20 +1,24 @@
 import React from 'react';
 import { UserProfile } from '../types';
 import { Users, Trophy, Medal } from 'lucide-react';
+import { educationService } from '../services/api';
 
 export default function Ranking({ user }: { user: UserProfile }) {
   const [ranking, setRanking] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    fetch('/api/ranking')
-      .then(res => res.json())
+    educationService.getRanking()
       .then(data => {
+         if (!Array.isArray(data)) {
+           console.error('Ranking data is not an array:', data);
+           return;
+         }
          const formatted = data.map((s: any) => ({
            id: s.id,
-           name: s.user.name,
+           name: s.user?.name || 'Inconhecido',
            className: s.classId || 'Sem Turma',
            xp: s.xp,
-           isUser: s.userId === localStorage.getItem('userId') // Assuming ID is stored
+           isUser: s.userId === localStorage.getItem('userId')
          }));
          setRanking(formatted);
       })

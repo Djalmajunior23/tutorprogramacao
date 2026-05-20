@@ -13,7 +13,15 @@ const INITIAL_USER: UserProfile = {
   completedChallenges: [],
   unlockedAchievements: [],
   lastAccess: new Date().toISOString(),
-  role: 'STUDENT'
+  role: 'STUDENT',
+  skills: {
+    logic: 0,
+    variables: 0,
+    conditionals: 0,
+    loops: 0,
+    arrays: 0,
+    functions: 0
+  }
 };
 
 export function useUser() {
@@ -44,16 +52,26 @@ export function useUser() {
                 ?.filter((a: any) => a.isCorrect)
                 ?.map((a: any) => a.challengeId) || [],
               unlockedAchievements: dbUser.studentProfile?.achievements?.map((a: any) => a.achievementId) || [],
-              lastAccess: new Date().toISOString()
+              lastAccess: new Date().toISOString(),
+              skills: {
+                logic: 45,
+                variables: 70,
+                conditionals: 30,
+                loops: 15,
+                arrays: 0,
+                functions: 0
+              }
             };
             setUser(profile);
             setIsAuthenticated(true);
           }
         } catch (error) {
-          console.error("Failed to sync profile:", error);
-          // If token is invalid, logout
-          if ((error as any).response?.status === 403 || (error as any).response?.status === 401) {
+          const status = (error as any).response?.status;
+          
+          if (status === 403 || status === 401 || status === 404) {
              logout();
+          } else {
+             console.error("Failed to sync profile:", error);
           }
         }
       }
@@ -102,7 +120,15 @@ export function useUser() {
       completedModules: [], // Simplified for now
       completedChallenges: [],
       unlockedAchievements: [],
-      lastAccess: new Date().toISOString()
+      lastAccess: new Date().toISOString(),
+      skills: {
+        logic: 0,
+        variables: 0,
+        conditionals: 0,
+        loops: 0,
+        arrays: 0,
+        functions: 0
+      }
     };
     setUser(profile);
   };

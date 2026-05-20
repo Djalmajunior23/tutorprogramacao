@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -13,7 +13,6 @@ model User {
   email     String   @unique
   password  String
   role      String   @default("STUDENT") // "ADMIN", "TEACHER", "STUDENT"
-  active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
   studentProfile StudentProfile?
@@ -24,9 +23,6 @@ model StudentProfile {
   id        String @id @default(uuid())
   userId    String @unique
   classId   String?
-  registration String?
-  phone       String?
-  birthDate   DateTime?
   avatar    String?
   xp        Int    @default(0)
   level     Int    @default(1)
@@ -41,7 +37,7 @@ model StudentProfile {
   quizRuns  QuizRun[]
   achievements StudentAchievement[]
   recommendations Recommendation[]
-  enrollments Enrollment[]
+  rankHistory RankingSnapshot[]
 }
 
 model StudentSkillSet {
@@ -85,7 +81,6 @@ model Enrollment {
   enrolledAt DateTime @default(now())
 
   class     Class    @relation(fields: [classId], references: [id])
-  student   StudentProfile @relation(fields: [studentId], references: [id])
   @@unique([classId, studentId])
 }
 
@@ -189,8 +184,6 @@ model Challenge {
   difficulty  String
   xpReward    Int    @default(50)
   type        String // "PSEUDOCODE", "CODE", "MULTIPLE_CHOICE"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
   module      Module? @relation(fields: [moduleId], references: [id])
   concept     Concept? @relation(fields: [conceptId], references: [id])
@@ -251,7 +244,7 @@ model QuizRun {
 }
 
 model QuizAnswer {
-  id         String @id @default(uuid())
+  id         String @id @id @default(uuid())
   quizRunId  String
   question   String
   selected   String
@@ -285,7 +278,10 @@ model Recommendation {
 
 model RankingSnapshot {
   id        String @id @default(uuid())
-  classId   String?
-  snapshot  String // Store list as JSON string for SQLite dev
+  studentId String
+  rank      Int
+  xp        Int
   createdAt DateTime @default(now())
+
+  student   StudentProfile @relation(fields: [studentId], references: [id])
 }
